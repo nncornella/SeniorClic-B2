@@ -1,0 +1,281 @@
+Temas ( colecciones )
+ └─Nivel (LevelEntity)
+   └─ Libro (Book - curso)
+      └─ Lección (Lesson)
+          └─ Capítulo (Chapter)
+              └─ Tema (Topic)
+                  └─ Subtema (Subtopic)
+                      └─ Página (Page)
+
+package com.seguridadseniors;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+// --------------------- APP MAIN ---------------------
+
+@SpringBootApplication
+public class SeguridadSeniorsApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(SeguridadSeniorsApplication.class, args);
+    }
+}
+
+// --------------------- ENTIDADES ---------------------
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class LearningLevel {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+
+    @OneToMany(mappedBy = "level", cascade = CascadeType.ALL)
+    private List<Book> books;
+}
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class Book {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+    private String description;
+
+    @ManyToOne @JoinColumn(name = "level_id")
+    private LearningLevel level;
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL)
+    private List<Lesson> lessons;
+}
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class Lesson {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+
+    @ManyToOne @JoinColumn(name = "book_id")
+    private Book book;
+
+    @OneToMany(mappedBy = "lesson", cascade = CascadeType.ALL)
+    private List<Chapter> chapters;
+}
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class Chapter {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+
+    @ManyToOne @JoinColumn(name = "lesson_id")
+    private Lesson lesson;
+
+    @OneToMany(mappedBy = "chapter", cascade = CascadeType.ALL)
+    private List<Topic> topics;
+}
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class Topic {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+
+    @ManyToOne @JoinColumn(name = "chapter_id")
+    private Chapter chapter;
+
+    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL)
+    private List<Subtopic> subtopics;
+}
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class Subtopic {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+
+    @ManyToOne @JoinColumn(name = "topic_id")
+    private Topic topic;
+
+    @OneToMany(mappedBy = "subtopic", cascade = CascadeType.ALL)
+    private List<Page> pages;
+}
+
+@Entity
+@Data @NoArgsConstructor @AllArgsConstructor
+class Page {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private int pageNumber;
+    private String title;
+
+    @Lob
+    private String content;
+    private String imageUrl;
+
+    @ManyToOne @JoinColumn(name = "subtopic_id")
+    private Subtopic subtopic;
+}
+
+// --------------------- REPOSITORIOS ---------------------
+
+@Repository interface LevelEntityRepository extends JpaRepository<LearningLevel, Long> {}
+
+@Repository interface BookRepository extends JpaRepository<Book, Long> {
+    List<Book> findByLevelId(Long levelId);
+}
+
+@Repository interface LessonRepository extends JpaRepository<Lesson, Long> {
+    List<Lesson> findByBookId(Long bookId);
+}
+
+@Repository interface ChapterRepository extends JpaRepository<Chapter, Long> {
+    List<Chapter> findByLessonId(Long lessonId);
+}
+
+@Repository interface TopicRepository extends JpaRepository<Topic, Long> {
+    List<Topic> findByChapterId(Long chapterId);
+}
+
+@Repository interface SubtopicRepository extends JpaRepository<Subtopic, Long> {
+    List<Subtopic> findByTopicId(Long topicId);
+}
+
+@Repository interface PageRepository extends JpaRepository<Page, Long> {
+    List<Page> findBySubtopicId(Long subtopicId);
+}
+
+// --------------------- SERVICIOS ---------------------
+
+@Service @RequiredArgsConstructor
+class LevelService {
+    private final LearningLevelRepository repo;
+    public List<LearningLevel> getAll() { return repo.findAll(); }
+    public LearningLevel save(LearningLevel l) { return repo.save(l); }
+}
+
+@Service @RequiredArgsConstructor
+class BookService {
+    private final BookRepository repo;
+    public List<Book> findByLevel(Long id) { return repo.findByLevelId(id); }
+    public Book save(Book b) { return repo.save(b); }
+}
+
+@Service @RequiredArgsConstructor
+class LessonService {
+    private final LessonRepository repo;
+    public List<Lesson> findByBook(Long id) { return repo.findByBookId(id); }
+    public Lesson save(Lesson l) { return repo.save(l); }
+}
+
+@Service @RequiredArgsConstructor
+class ChapterService {
+    private final ChapterRepository repo;
+    public List<Chapter> findByLesson(Long id) { return repo.findByLessonId(id); }
+    public Chapter save(Chapter c) { return repo.save(c); }
+}
+
+@Service @RequiredArgsConstructor
+class TopicService {
+    private final TopicRepository repo;
+    public List<Topic> findByChapter(Long id) { return repo.findByChapterId(id); }
+    public Topic save(Topic t) { return repo.save(t); }
+}
+
+@Service @RequiredArgsConstructor
+class SubtopicService {
+    private final SubtopicRepository repo;
+    public List<Subtopic> findByTopic(Long id) { return repo.findByTopicId(id); }
+    public Subtopic save(Subtopic s) { return repo.save(s); }
+}
+
+@Service @RequiredArgsConstructor
+class PageService {
+    private final PageRepository repo;
+    public List<Page> findBySubtopic(Long id) { return repo.findBySubtopicId(id); }
+    public Page save(Page p) { return repo.save(p); }
+}
+
+// --------------------- CONTROLADORES ---------------------
+
+@RestController @RequestMapping("/api/levels") @RequiredArgsConstructor
+class LevelController {
+    private final LearningLevelService service;
+    private final BookService bookService;
+
+    @GetMapping public List<LearningLevel> all() { return service.getAll(); }
+
+    @GetMapping("/{id}/books")
+    public List<Book> books(@PathVariable Long id) {
+        return bookService.findByLevel(id);
+    }
+}
+
+@RestController @RequestMapping("/api/books") @RequiredArgsConstructor
+class BookController {
+    private final LessonService lessonService;
+
+    @GetMapping("/{id}/lessons")
+    public List<Lesson> lessons(@PathVariable Long id) {
+        return lessonService.findByBook(id);
+    }
+}
+
+@RestController @RequestMapping("/api/lessons") @RequiredArgsConstructor
+class LessonController {
+    private final ChapterService chapterService;
+
+    @GetMapping("/{id}/chapters")
+    public List<Chapter> chapters(@PathVariable Long id) {
+        return chapterService.findByLesson(id);
+    }
+}
+
+@RestController @RequestMapping("/api/chapters") @RequiredArgsConstructor
+class ChapterController {
+    private final TopicService topicService;
+
+    @GetMapping("/{id}/topics")
+    public List<Topic> topics(@PathVariable Long id) {
+        return topicService.findByChapter(id);
+    }
+}
+
+@RestController @RequestMapping("/api/topics") @RequiredArgsConstructor
+class TopicController {
+    private final SubtopicService subtopicService;
+
+    @GetMapping("/{id}/subtopics")
+    public List<Subtopic> subtopics(@PathVariable Long id) {
+        return subtopicService.findByTopic(id);
+    }
+}
+
+@RestController @RequestMapping("/api/subtopics") @RequiredArgsConstructor
+class SubtopicController {
+    private final PageService pageService;
+
+    @GetMapping("/{id}/pages")
+    public List<Page> pages(@PathVariable Long id) {
+        return pageService.findBySubtopic(id);
+    }
+}
+
+
+
+
+
+
+
